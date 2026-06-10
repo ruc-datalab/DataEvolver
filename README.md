@@ -1,164 +1,63 @@
-<div align="center">
+<p align="center" width="100%">
+<img src="assets/DataEvolver.png" alt="DataEvolver" style="width: 65%; min-width: 300px; display: block; margin: auto;">
+</p>
 
-# DataEvolver
-
-**Automatic data preparation for LLMs via multi-level self-evolving pipelines**
+# DataEvolver: Automatic Data Preparation for LLMs via Multi-Level Self-Evolving
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![PyPI](https://img.shields.io/pypi/v/dataevolver?color=306998)](https://pypi.org/project/dataevolver/)
+[![Paper](https://img.shields.io/badge/Paper-PDF-red?logo=adobeacrobatreader&logoColor=white)](assets/DataEvolver.pdf)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![Paper](https://img.shields.io/badge/Paper-PDF-red?logo=adobeacrobatreader&logoColor=white)](assets/DataEvolver.pdf)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-**[Paper](assets/DataEvolver.pdf)** · **[Demo](#demo)** · **[Install](#install)** · **[Quick Start](#quick-start)** · **[Results](#results)** · **[Usage](#usage)**
+**[Paper](assets/DataEvolver.pdf)** · **[Demo](#-demo)** · **[Quick Start](#-quick-start)** · **[Usage](#usage)** · **[Results](#-results)**
 
-<br/>
+**DataEvolver** is a seed-driven, multi-level self-evolving system for **LLM training data preparation**. Starting from noisy raw data and only a handful of seed examples, it automatically understands target data characteristics, builds and repairs executable operator DAGs, trial-runs on samples, and iteratively refines the pipeline until outputs align with seeds — then runs full preparation.
 
-<img src="assets/DataEvolver.png" width="720" alt="DataEvolver overview"/>
+DataEvolver supports:
 
-<br/>
+- 🌱 **Seed-guided understanding** — distill schema, format, style, and quality constraints from seed data (not just task descriptions)
+- 🔧 **Operator-level self-evolving** — orchestrate DAGs, detect structural gaps, and synthesize bridging / task-specific operators when needed
+- 🔄 **Pipeline-level self-evolving** — trial runs, Pilot LLM judging, experience reflow, and next-round understanding + orchestration updates
+- 🖥 **Three aligned interfaces** — Web UI (evolution canvas), CLI, and HTTP API share the same workflow semantics
+- 📦 **Fully open & deployable** — git clone for full stack, or `pip install dataevolver` for CLI/API; all stage artifacts are inspectable
 
-<sub>Give us a ⭐ if DataEvolver helps your data-prep workflow.</sub>
-
-</div>
-
-## What is DataEvolver?
-
-**Raw corpora are noisy. Seeds show what “good” looks like. DataEvolver closes the gap automatically.**
-
-Turn noisy raw data + a handful of seed examples into **training-ready, seed-aligned datasets** — with executable DAGs, trial feedback, and iterative refinement built in.
-
-You provide **raw data**, **seed examples**, and optionally a **task description**. DataEvolver:
-
-1. **Understands** the target profile implied by seeds  
-2. **Orchestrates** an operator DAG, validates it, and evolves missing operators when needed  
-3. **Instantiates & trials** the pipeline, judges sample quality, and **refines across rounds**  
-4. **Runs full preparation** when quality gates pass  
-
-Unlike one-shot pipeline synthesis, DataEvolver jointly optimizes **executability** and **seed alignment** through **multi-level self-evolving** loops.
-
-| You provide | DataEvolver does | You get |
-|:--|:--|:--|
-| Raw data | Understands target profile from seeds | Structured understanding artifact |
-| Seed examples | Orchestrates & validates operator DAGs | Executable pipeline plan |
-| Optional task description | Instantiates, trials, judges, evolves | High-quality prepared data |
-
-> **One sentence:** a self-evolving data-prep system that optimizes both **can it run?** and **does it match seeds?** — not just one-shot pipeline synthesis.
-
-### Why it matters
-
-Training data quality remains a bottleneck in LLM post-training. Most approaches fall into two camps:
-
-| Approach | Strength | Limitation |
-|:--|:--|:--|
-| **Predefined recipes** | Stable engineering | Hard to adapt to new tasks |
-| **One-shot pipeline synthesis** | Flexible | Often fragile in execution & quality |
-
-DataEvolver asks a harder, more practical question:
-
-> **Can we automatically build a high-quality data preparation pipeline from raw data and only a small set of seed examples?**
-
-### Highlights
-
-- **Seed-guided understanding** — infer schema, style, and quality constraints from seeds + sampled raw data  
-- **Operator-level self-evolving** — build, validate, and repair DAGs; synthesize operators when the registry is insufficient  
-- **Pipeline-level self-evolving** — trial runs, pilot judging, experience summarization, and next-round refinement  
-- **Three aligned interfaces** — Web UI, CLI, and HTTP API share the same workflow semantics  
-- **Observable by design** — stage artifacts, orchestration retries, token ledger, and round history are all inspectable  
-- **Open & extensible** — modular subsystems, editable operator registry, and scriptable automation  
-
-## Results
-
-> Empirical evidence from our paper — DataEvolver improves downstream training across diverse task types.
-
-<table align="center">
-<tr>
-<td align="center"><b>~12%</b><br/><sub>avg relative gain vs.<br/>weaker prep settings</sub></td>
-<td align="center"><b>7</b> benchmarks<br/><sub>instruction · MC-QA · math · SQL</sub></td>
-<td align="center"><b>~40%</b><br/><sub>lower amortized token cost<br/>on average</sub></td>
-</tr>
-</table>
-
-<br/>
-
-<p align="center">
-  <img src="assets/main_exp.png" width="92%" alt="Main experiment: downstream performance across 7 benchmarks"/>
+<p align="center" width="100%">
+<img src="assets/ill.png" alt="DataEvolver framework" style="width: 75%; min-width: 300px; display: block; margin: auto;">
 </p>
 
-<p align="center"><i>Downstream performance across 7 benchmarks from 4 task categories (instruction following, MC-QA, math reasoning, text-to-SQL).</i></p>
+## 🖥 Demo
+
+Upload raw data and seed examples — DataEvolver automatically performs structured understanding, DAG orchestration, instantiation, trial evaluation, and experience reflow across rounds.
 
 <p align="center">
-  <img src="assets/compare.png" width="88%" alt="Comparison against strong baselines"/>
+  <img src="assets/demo_preview.gif" alt="DataEvolver evolution canvas demo" width="92%"/>
 </p>
 
-<p align="center"><i>DataEvolver vs. vanilla SFT on raw data and strong data-prep baselines — fewer, better-prepared samples can match or exceed larger weakly-prepared alternatives.</i></p>
-
-<details>
-<summary><b>Ablation & case study (click to expand)</b></summary>
-
-<br/>
-
-**Both evolution loops matter**
-
-<p align="center"><img src="assets/ablation.png" width="80%" alt="Ablation study"/></p>
-
-- Without **operator-level** evolution → pipelines are less executable and coherent  
-- Without **pipeline-level** evolution → outputs are less seed-aligned  
-
-**Case study: how a plan evolves across rounds**
-
-<p align="center"><img src="assets/case.png" width="92%" alt="Case study: pipeline evolution"/></p>
-
-See how an initial logical plan evolves into a refined executable pipeline, and how trial feedback becomes constraints for later rounds.
-
-</details>
-
-## Demo
-
-Watch the **evolution canvas** in action — DAG orchestration tabs, instantiation cards, sample evaluation, and experience reflow across rounds.
-
-<p align="center">
-  <img src="assets/demo_preview.gif" alt="DataEvolver evolution canvas demo preview" width="92%"/>
+<p align="center" width="100%">
+▶ <b><a href="https://github.com/ruc-datalab/DataEvolver/raw/main/assets/demo.mp4">Watch full demo</a></b> (2m50s)
+· <a href="https://github.com/ruc-datalab/DataEvolver/releases/download/demo-2026-04-18/DataEvolver_Demo_small.mov">Download HD .mov</a>
 </p>
 
-<p align="center">
-  ▶ <b><a href="https://github.com/Akanezora0/DataEvolver/raw/main/assets/demo.mp4">Watch full demo</a></b>
-  (2m50s)
-  ·
-  <a href="https://github.com/Akanezora0/DataEvolver/releases/download/demo-2026-04-18/DataEvolver_Demo_small.mov">Download HD .mov</a>
-</p>
+> [!TIP]
+>
+> Clone this repository and configure an OpenAI-compatible LLM API to run DataEvolver locally as your data-prep agent — no closed-source workflow engine required. The evolution canvas lets you inspect every stage artifact, DAG retry, and trial score.
 
-## How it works
+## ✨ Highlights
 
-<p align="center">
-  <img src="assets/ill.png" width="92%" alt="DataEvolver framework"/>
-</p>
+- **Executable + seed-aligned** — jointly optimizes *can the pipeline run end-to-end?* and *does output match seed supervision style?*
+- **DAG-native orchestration** — three-stage LLM planning with automatic structural check + LLM assessment after each orchestration
+- **Evolvable operator registry** — auto-evolve operators on demand; manually add custom operators via CLI/API and re-orchestrate
+- **Observable workflow** — per-step artifacts, orchestration retry tabs, token ledger, and round/iteration archives
+- **Automation with control** — `advance-all` for hands-off runs, or step-by-step `understand` / `orchestrate` / `trial` with `rerun` and `--force`
+- **Cross-platform** — Linux / macOS / Windows setup scripts; PyPI package for portable CLI workspaces
 
+## 🚀 Quick Start
 
+> Full deployment guide: **[docs/INSTALL.md](docs/INSTALL.md)**
 
-**Core workflow loop**
-
-```text
-understanding → orchestration → operator_evolution → instantiation
-             → trial_run → quality_check → experience → (refine or full run)
-```
-
-When quality criteria are met, DataEvolver runs the refined pipeline on the full dataset.
-
-| Layer | What happens |
-|:------|:-------------|
-| **Understanding** | Learn the target data profile from seeds and raw samples |
-| **Operator evolution** | Fix DAG structure, dependencies, and missing capabilities |
-| **Pipeline evolution** | Convert trial-vs-seed gaps into reusable experience for the next round |
-
-Web UI, CLI, and HTTP API expose the **same workflow** — pick the interface that fits your workflow.
-
-## Install
-
-> Full cross-platform guide: **[docs/INSTALL.md](docs/INSTALL.md)**
-
-### Prerequisites
+### Requirements
 
 | Component | Version |
 |:--|:--|
@@ -166,75 +65,41 @@ Web UI, CLI, and HTTP API expose the **same workflow** — pick the interface th
 | Node.js | **18+** LTS (Web UI only) |
 | LLM API | OpenAI-compatible endpoint + key |
 
-### From source (Web UI + CLI + API)
+### 1. Install
+
+**From source (Web UI + CLI + API)**
 
 ```bash
-git clone https://github.com/Akanezora0/DataEvolver.git
+git clone https://github.com/ruc-datalab/DataEvolver.git
 cd DataEvolver
+python scripts/setup_env.py    # or: bash setup_env.sh / setup_env.ps1
 ```
 
-| Platform | One-command setup |
-|:--|:--|
-| Linux / macOS / Git Bash | `bash setup_env.sh` |
-| Windows PowerShell | `powershell -ExecutionPolicy Bypass -File .\setup_env.ps1` |
-| Windows CMD | `setup_env.bat` |
-| **Any OS** | `python scripts/setup_env.py` |
-
-This creates `.venv`, installs Python + npm dependencies, and copies `config/*.example.json` → `config/*.json` when missing.
-
-Optional flags: `--skip-frontend` (API/CLI only) · `--frontend-only` (npm only).
-
-### From PyPI (CLI + API)
+**From PyPI (CLI + API only)**
 
 ```bash
 pip install dataevolver
 mkdir my_project && cd my_project
-dataevolver init          # creates config/ + data/ from bundled templates
-# edit config/api_config.json & config/api_keys.json
+dataevolver init
 dataevolver --help
-dataevolver-server --reload   # API on :8000 (Web UI still needs git clone + npm)
 ```
 
-See **[docs/PUBLISHING.md](docs/PUBLISHING.md)** for maintainers (Test PyPI / PyPI upload).
-
-### Configure LLM
+### 2. Configure LLM
 
 ```text
 config/api_config.json   # provider, base URL, model
 config/api_keys.json     # API key (gitignored — do not commit)
 ```
 
-## Quick Start
+### 3. Start services
 
-### Start services (two terminals)
-
-| Service | Cross-platform | Classic |
+| Service | Command | URL |
 |:--|:--|:--|
-| **Backend** `:8000` | `python scripts/dev.py backend` | `python run_server.py --reload` *(after activating `.venv`)* |
-| **Frontend** `:5173` | `python scripts/dev.py frontend` | `cd frontend && npm run dev` |
+| Backend | `python scripts/dev.py backend` | http://127.0.0.1:8000 |
+| Frontend | `python scripts/dev.py frontend` | http://127.0.0.1:5173 |
+| API docs | — | http://127.0.0.1:8000/docs |
 
-Activate virtualenv if needed:
-
-```bash
-# Linux / macOS
-source .venv/bin/activate
-
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-
-# Windows Git Bash
-source .venv/Scripts/activate
-```
-
-### Open the app
-
-| Service | URL |
-|:--|:--|
-| Web UI | http://127.0.0.1:5173 |
-| HTTP API | http://127.0.0.1:8000 |
-| OpenAPI docs | http://127.0.0.1:8000/docs |
-
-### First pipeline (CLI)
+### 4. Run your first pipeline
 
 ```bash
 dataevolver session-start my_pipeline \
@@ -243,53 +108,37 @@ dataevolver session-start my_pipeline \
   --description tmp/samples/finance_description.txt
 
 dataevolver workflow advance-all my_pipeline --max-steps 32
-dataevolver workflow state my_pipeline
+dataevolver state my_pipeline
 ```
 
-Open the Web UI to explore the evolution canvas, or stay in the terminal with `dataevolver advance my_pipeline`.
+Open **http://127.0.0.1:5173** for the evolution canvas, or continue in the terminal with `dataevolver advance my_pipeline`.
 
 ## Usage
 
 DataEvolver exposes the **same workflow** through three interfaces.
 
-<table>
-<tr><th>Interface</th><th>Best for</th><th>Entry</th></tr>
-<tr>
-  <td><b>Web UI</b></td>
-  <td>Exploration, visual DAG & trial inspection</td>
-  <td><code>http://127.0.0.1:5173</code></td>
-</tr>
-<tr>
-  <td><b>CLI</b></td>
-  <td>Reproducible runs, scripting, CI</td>
-  <td><code>dataevolver --help</code> · <code>dataevolver wf --help</code></td>
-</tr>
-<tr>
-  <td><b>HTTP API</b></td>
-  <td>Integration & automation</td>
-  <td><code>http://127.0.0.1:8000/docs</code></td>
-</tr>
-</table>
+| Interface | Best for | Entry |
+|:--|:--|:--|
+| **Web UI** | Visual DAG, trial scores, evolution history | http://127.0.0.1:5173 |
+| **CLI** | Reproducible runs, scripting, CI | `dataevolver --help` · `dataevolver wf --help` |
+| **HTTP API** | Integration & automation | http://127.0.0.1:8000/docs |
 
-### Web UI (recommended for exploration)
+### Web UI
 
-1. Create or select a pipeline session  
-2. Upload raw data, seed data, and optional task description  
-3. Advance step-by-step or run continuously  
-4. Inspect DAG tabs, instantiation code, trial scores, and experience  
-5. Trigger **full run** only after quality gates pass  
+1. Create or select a pipeline session
+2. Upload raw data, seed data, and optional task description
+3. Advance step-by-step or run continuously
+4. Inspect DAG tabs, instantiation code, trial scores, and experience
+5. Trigger **full run** only after quality gates pass
 
-### CLI (recommended for reproducibility)
+### CLI
 
 ```bash
-dataevolver --help
 dataevolver state my_pipeline
 dataevolver advance my_pipeline
 dataevolver workflow advance-all my_pipeline --max-steps 32
-dataevolver lang en    # switch CLI output language (zh / en)
+dataevolver lang en    # CLI output: zh / en
 ```
-
-**Stage commands**
 
 | Stage | Command |
 |:--|:--|
@@ -301,164 +150,132 @@ dataevolver lang en    # switch CLI output language (zh / en)
 | Quality check | `dataevolver quality-check my_pipeline` |
 | Experience | `dataevolver experience my_pipeline` |
 | Full run | `dataevolver run my_pipeline` |
-| Refresh DAG assessment | `dataevolver workflow validate-dag my_pipeline` |
-
-**Debugging & automation**
 
 ```bash
 dataevolver rerun my_pipeline orchestration
 dataevolver tokens my_pipeline
-dataevolver state --json my_pipeline
-dataevolver advance --json my_pipeline
-dataevolver next my_pipeline          # print next command only (script-friendly)
+dataevolver op add my_op -p my_pipeline -d "Clean records" -c structure
 ```
 
-### Operator pool (manual add)
-
-Add custom operators to the **task memory** layer (`data/operator_registry_user/<pipeline_id>.json`). Same assimilation path as auto-evolution — eligible for domain/general promotion later.
-
-```bash
-# List pool for a pipeline
-dataevolver operators list -p my_pipeline
-dataevolver op list -p my_pipeline --source task   # short alias: op
-
-# Add one operator
-dataevolver op add my_task.clean_answer -p my_pipeline \
-  -d "Strip boilerplate and keep direct answers" \
-  -c semantic --requires-llm
-
-# Interactive wizard
-dataevolver op add -p my_pipeline -i
-
-# Import from JSON (see examples/operator_template.json)
-dataevolver op add -p my_pipeline --from-file examples/operator_template.json
-
-# Clone spec from an existing operator
-dataevolver op add my_task.custom_filter -p my_pipeline --copy-from remove_field -d "My variant"
-
-# Remove from task memory (cannot delete base operators)
-dataevolver op remove my_task.clean_answer -p my_pipeline
-```
-
-After adding operators, **re-run orchestration** so the DAG can pick them up:
-
-```bash
-dataevolver workflow orchestrate my_pipeline
-```
-
-### HTTP API (recommended for integration)
+### HTTP API
 
 | Endpoint | Purpose |
 |:--|:--|
 | `POST /api/sessions/start` | Create session & register manifest |
 | `GET /api/workflow/{pipeline_id}/state` | Read workflow state |
 | `POST /api/workflow/{pipeline_id}/advance` | Advance one step |
-| `POST /api/workflow/{pipeline_id}/rerun` | Rerun from a stage |
 | `POST /api/pipeline/{pipeline_id}/run-full` | Full dataset execution |
 | `GET /api/operators/?pipeline_id=` | List merged operator pool |
-| `POST /api/operators/add` | Manually add operator(s) |
-| `POST /api/operators/remove` | Remove from task/domain/general memory |
 
-Interactive schema: http://127.0.0.1:8000/docs
+<details>
+<summary><b>Operator pool, project layout, configuration & FAQ</b></summary>
 
-## Project structure
+**Operator pool** — add custom operators, then re-orchestrate:
+
+```bash
+dataevolver op list -p my_pipeline
+dataevolver op add -p my_pipeline --from-file examples/operator_template.json
+dataevolver workflow orchestrate my_pipeline
+```
+
+**Project layout**
 
 ```text
 DataEvolver/
-├── core/           # config, paths, LLM client, logging, token ledger
-├── subsystems/     # understanding, orchestration, instantiation, trial, workflow, …
-├── web/            # FastAPI app & routers
-├── frontend/       # React + Vite evolution canvas UI
-├── cli/            # Typer CLI (`dataevolver`)
-├── config/         # runtime configs & templates
-├── data/           # artifacts, workflow state, uploads (runtime)
-├── assets/         # paper figures, demo media
-├── examples/       # sample configs (e.g. operator_template.json)
-├── scripts/
-│   ├── setup_env.py   # cross-platform installer (core)
-│   └── dev.py         # dev server helpers
-├── setup_env.sh       # Linux / macOS / Git Bash → setup_env.py
-├── setup_env.ps1      # Windows PowerShell → setup_env.py
-├── setup_env.bat      # Windows CMD → setup_env.py
-└── docs/INSTALL.md    # full deployment guide
+├── subsystems/     # understanding, orchestration, workflow, …
+├── web/            # FastAPI
+├── frontend/       # React evolution canvas
+├── cli/            # Typer CLI (dataevolver)
+├── config/         # api_config, api_keys, operator registry
+└── data/           # runtime artifacts (gitignored)
 ```
 
-## Configuration
+**Tips:** use `rerun` / `--force` to regenerate stages · `dataevolver tokens` for LLM usage · artifacts under `data/artifact_history/`
 
-| File | Purpose |
+**FAQ**
+
+- *Instantiation finishes instantly?* — artifacts may be reused (`skipped`); built-in operators use templates.
+- *Experience finishes quickly?* — rule-based aggregation for deterministic reflow, not LLM rewriting.
+- *Multiple orchestration tabs?* — each tab is a distinct attempt (failed validation → repaired DAG).
+
+</details>
+
+## 📊 Results
+
+Empirical evaluation from our paper — DataEvolver improves downstream training data quality and model performance across diverse task types.
+
+<table align="center">
+<tr>
+<td align="center"><b>~12%</b><br/><sub>avg relative gain vs.<br/>weaker prep settings</sub></td>
+<td align="center"><b>7</b> benchmarks<br/><sub>instruction · MC-QA · math · SQL</sub></td>
+<td align="center"><b>~40%</b><br/><sub>lower amortized token cost<br/>on average</sub></td>
+</tr>
+</table>
+
+<p align="center">
+  <img src="assets/main_exp.png" width="92%" alt="Main experiment results"/>
+</p>
+<p align="center"><i>Downstream performance across 7 benchmarks from 4 task categories.</i></p>
+
+<p align="center">
+  <img src="assets/compare.png" width="88%" alt="Comparison against baselines"/>
+</p>
+<p align="center"><i>vs. vanilla SFT on raw data and strong data-prep baselines — fewer, better-prepared samples can match larger weakly-prepared sets.</i></p>
+
+<details>
+<summary><b>Ablation, case study & how it works</b></summary>
+
+<p align="center"><img src="assets/ablation.png" width="80%" alt="Ablation study"/></p>
+
+- Without **operator-level** evolution → less executable, less coherent pipelines
+- Without **pipeline-level** evolution → less seed-aligned outputs
+
+<p align="center"><img src="assets/case.png" width="92%" alt="Case study"/></p>
+
+**Workflow loop**
+
+```text
+understanding → orchestration → operator_evolution → instantiation
+             → trial_run → quality_check → experience → (refine or full run)
+```
+
+| Layer | What happens |
 |:--|:--|
-| `config/api_config.json` | LLM provider, model, endpoints |
-| `config/api_keys.json` | API credentials (keep out of git) |
-| `config/operator_registry*.json` | Built-in & custom operators |
-| `data/workflow_runs/{id}/state.json` | Per-pipeline workflow progress |
+| **Understanding** | Learn target profile from seeds + raw samples |
+| **Operator evolution** | Repair DAG; synthesize missing operators |
+| **Pipeline evolution** | Trial feedback → experience → next-round refinement |
 
-**Tips**
+Compared to predefined recipes (stable but rigid) or one-shot pipeline synthesis (flexible but fragile), DataEvolver treats data preparation as an **iterative, self-improving closed loop**.
 
-- Use `--force` / `rerun` when you want to regenerate a stage instead of reusing cached artifacts  
-- Delete `data/generated_pipelines/{id}.json` to force re-instantiation  
-- Token usage is tracked per workflow step via `dataevolver tokens`  
-- CLI language: `dataevolver lang en` or `DATAEVOLVER_LANG=en`
-
-## FAQ
-
-<details>
-<summary><b>Why does instantiation finish instantly?</b></summary>
-
-If artifacts already exist, instantiation may **reuse** previous outputs (`skipped`). Built-in operators also use template delegation — only `requires_llm` operators trigger LLM codegen. Check the UI banner or `dataevolver state` message for reuse vs. LLM details.
 </details>
 
-<details>
-<summary><b>Why does experience also finish quickly?</b></summary>
-
-Experience summarization is **rule-based aggregation** over quality check, trial, and pilot results — it is designed for deterministic reflow, not LLM step-by-step rewriting.
-</details>
-
-<details>
-<summary><b>Why do I see multiple orchestration tabs?</b></summary>
-
-Each tab is a distinct orchestration attempt — typically a failed validation followed by a repaired DAG. Archives live under `data/artifact_history/{pipeline_id}/`.
-</details>
-
-<details>
-<summary><b>Which data formats are supported today?</b></summary>
-
-The current release focuses on **text** data preparation for LLM training: instruction tuning, QA-style supervision, math reasoning traces, and text-to-SQL. The architecture is extensible to broader modalities in future releases.
-</details>
-
-## Community
-
-We welcome issues, ideas, and contributions!
+## 🤝 Community
 
 | Channel | Link |
 |:--|:--|
-| **Bug reports & feature requests** | [GitHub Issues](https://github.com/Akanezora0/DataEvolver/issues) |
-| **Questions & show-and-tell** | [GitHub Discussions](https://github.com/Akanezora0/DataEvolver/discussions) |
-| **Demo video (full resolution)** | [Release download](https://github.com/Akanezora0/DataEvolver/releases/download/demo-2026-04-18/DataEvolver_Demo_small.mov) |
+| Issues & features | [GitHub Issues](https://github.com/ruc-datalab/DataEvolver/issues) |
+| Questions | [GitHub Discussions](https://github.com/ruc-datalab/DataEvolver/discussions) |
 
-### Contributing (lightweight)
+Contributions welcome — operators, dataset adapters, UI polish, docs, and benchmark scripts.
 
-1. Fork the repo and create a feature branch  
-2. Keep changes focused; match existing module boundaries (`subsystems/`, `web/`, `frontend/`, `cli/`)  
-3. Run backend smoke tests / `npm run build` in `frontend/` when touching UI  
-4. Open a PR with: **what changed**, **why**, and **how to verify**
-
-**Good first contribution areas**
-
-- New operators in the registry  
-- Additional evaluation metrics or dataset adapters  
-- UI polish on the evolution canvas  
-- Docs, examples, and reproducible benchmark scripts  
-
-## Citation
+## 📖 Citation
 
 If you use DataEvolver in research, please cite our paper:
 
 ```bibtex
-
+@misc{deng2026dataevolverautomaticdatapreparation,
+      title={DataEvolver: Automatic Data Preparation for Large Language Models through Multi-Level Self-Evolving}, 
+      author={Chao Deng and Shaolei Zhang and Ju Fan and Xiaoyong Du},
+      year={2026},
+      eprint={2606.07001},
+      archivePrefix={arXiv},
+      primaryClass={cs.DB},
+      url={https://arxiv.org/abs/2606.07001}, 
+}
 ```
 
-<!-- 📄 Full paper: [assets/DataEvolver.pdf](assets/DataEvolver.pdf) -->
+📄 [assets/DataEvolver.pdf](assets/DataEvolver.pdf)
 
 <p align="center">
-  <sub>Built for teams who want <b>executable</b> and <b>seed-aligned</b> data pipelines — not one-shot prompts.</sub>
+<sub>If DataEvolver helps your data-prep workflow, give us a ⭐</sub>
 </p>

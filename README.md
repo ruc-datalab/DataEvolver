@@ -285,7 +285,6 @@ If you use DataEvolver in research, please cite our paper:
       year={2026},
       eprint={2606.07001},
       archivePrefix={arXiv},
-      primaryClass={cs.DB},
       url={https://arxiv.org/abs/2606.07001}, 
 }
 ```

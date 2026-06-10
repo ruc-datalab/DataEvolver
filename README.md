@@ -1,8 +1,6 @@
 <div align="center">
 
-# DataEvolver
-
-# Automatic data preparation for LLMs via multi-level self-evolving pipelines
+# DataEvolver: Automatic data preparation for LLMs via multi-level self-evolving pipelines
 
 <br/>
 

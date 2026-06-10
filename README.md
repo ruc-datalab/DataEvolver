@@ -1,8 +1,10 @@
-<p align="center" width="100%">
-<img src="assets/DataEvolver.png" alt="DataEvolver" style="width: 65%; min-width: 300px; display: block; margin: auto;">
-</p>
+<div align="center">
 
-# DataEvolver: Automatic Data Preparation for LLMs via Multi-Level Self-Evolving
+# DataEvolver
+
+**Automatic data preparation for LLMs via multi-level self-evolving pipelines**
+
+<br/>
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![PyPI](https://img.shields.io/pypi/v/dataevolver?color=306998)](https://pypi.org/project/dataevolver/)
@@ -11,11 +13,27 @@
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
+<br/>
+
 **[Paper](assets/DataEvolver.pdf)** · **[Demo](#-demo)** · **[Quick Start](#-quick-start)** · **[Usage](#usage)** · **[Results](#-results)**
 
-**DataEvolver** is a seed-driven, multi-level self-evolving system for **LLM training data preparation**. Starting from noisy raw data and only a handful of seed examples, it automatically understands target data characteristics, builds and repairs executable operator DAGs, trial-runs on samples, and iteratively refines the pipeline until outputs align with seeds — then runs full preparation.
+<br/>
 
-DataEvolver supports:
+<img src="assets/DataEvolver.png" width="720" alt="DataEvolver overview"/>
+
+<br/>
+
+<sub>Turn noisy raw data + a few seed examples into <b>training-ready, seed-aligned</b> datasets.</sub>
+
+<br/>
+
+<sub>Give us a ⭐ if DataEvolver helps your data-prep workflow.</sub>
+
+</div>
+
+**DataEvolver** is a seed-driven, multi-level self-evolving system for **LLM training data preparation**. Starting from raw data and only a handful of seed examples, it automatically understands target data characteristics, builds and repairs executable operator DAGs, trial-runs on samples, and iteratively refines the pipeline until outputs align with seeds — then runs full preparation.
+
+**DataEvolver supports:**
 
 - 🌱 **Seed-guided understanding** — distill schema, format, style, and quality constraints from seed data (not just task descriptions)
 - 🔧 **Operator-level self-evolving** — orchestrate DAGs, detect structural gaps, and synthesize bridging / task-specific operators when needed
@@ -23,8 +41,8 @@ DataEvolver supports:
 - 🖥 **Three aligned interfaces** — Web UI (evolution canvas), CLI, and HTTP API share the same workflow semantics
 - 📦 **Fully open & deployable** — git clone for full stack, or `pip install dataevolver` for CLI/API; all stage artifacts are inspectable
 
-<p align="center" width="100%">
-<img src="assets/ill.png" alt="DataEvolver framework" style="width: 75%; min-width: 300px; display: block; margin: auto;">
+<p align="center">
+  <img src="assets/ill.png" width="88%" alt="DataEvolver framework"/>
 </p>
 
 ## 🖥 Demo
@@ -274,8 +292,8 @@ If you use DataEvolver in research, please cite our paper:
 }
 ```
 
-📄 [assets/DataEvolver.pdf](assets/DataEvolver.pdf)
+<!-- 📄 [assets/DataEvolver.pdf](assets/DataEvolver.pdf) -->
 
 <p align="center">
-<sub>If DataEvolver helps your data-prep workflow, give us a ⭐</sub>
+  <sub>Built for teams who want <b>executable</b> and <b>seed-aligned</b> data pipelines — not one-shot prompts.</sub>
 </p>

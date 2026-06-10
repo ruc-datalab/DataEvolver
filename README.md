@@ -2,20 +2,20 @@
 
 # DataEvolver
 
-**Automatic data preparation for LLMs via multi-level self-evolving pipelines**
+# Automatic data preparation for LLMs via multi-level self-evolving pipelines
 
 <br/>
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![PyPI](https://img.shields.io/pypi/v/dataevolver?color=306998)](https://pypi.org/project/dataevolver/)
-[![Paper](https://img.shields.io/badge/Paper-PDF-red?logo=adobeacrobatreader&logoColor=white)](assets/DataEvolver.pdf)
+[![arXiv](https://img.shields.io/badge/arXiv-2606.07001-b31b1b.svg?logo=arXiv)](https://arxiv.org/abs/2606.07001)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 <br/>
 
-**[Paper](assets/DataEvolver.pdf)** · **[Demo](#-demo)** · **[Quick Start](#-quick-start)** · **[Usage](#usage)** · **[Results](#-results)**
+**[Paper](https://arxiv.org/abs/2606.07001)** · **[Demo](#-demo)** · **[Quick Start](#-quick-start)** · **[Usage](#usage)** · **[Results](#-results)**
 
 <br/>
 
@@ -292,7 +292,7 @@ If you use DataEvolver in research, please cite our paper:
 }
 ```
 
-<!-- 📄 [assets/DataEvolver.pdf](assets/DataEvolver.pdf) -->
+📄 Paper: [arXiv:2606.07001](https://arxiv.org/abs/2606.07001)
 
 <p align="center">
   <sub>Built for teams who want <b>executable</b> and <b>seed-aligned</b> data pipelines — not one-shot prompts.</sub>

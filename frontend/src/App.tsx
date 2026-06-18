@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { MainLayout } from './layouts/MainLayout'
+import { LandingPage } from './pages/LandingPage'
 import { Toast } from './components/Toast'
 import { useAppStore } from './stores/appStore'
 
@@ -7,6 +8,7 @@ export default function App() {
   const toast = useAppStore((s) => s.toast)
   const setToast = useAppStore((s) => s.setToast)
   const themeMode = useAppStore((s) => s.themeMode)
+  const [showLanding, setShowLanding] = useState(true)
 
   useEffect(() => {
     const root = document.documentElement
@@ -16,7 +18,10 @@ export default function App() {
 
   return (
     <>
-      <MainLayout />
+      {showLanding
+        ? <LandingPage onEnter={() => setShowLanding(false)} />
+        : <MainLayout />
+      }
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </>
   )

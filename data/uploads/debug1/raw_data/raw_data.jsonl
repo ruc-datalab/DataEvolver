@@ -1,0 +1,20 @@
+{"instruction": "解释什么是机器学习", "input": "", "output": "机器学习就是让机器自己学习的技术，很厉害的。"}
+{"instruction": "写一首关于春天的诗", "input": "", "output": "春天来了花开了，小鸟也飞来了，很好很好。"}
+{"instruction": "计算 15 * 23 等于多少", "input": "", "output": "等于345"}
+{"instruction": "翻译成英文：我喜欢吃苹果", "input": "", "output": "I like eat apple."}
+{"instruction": "介绍一下北京", "input": "", "output": "北京是中国首都，在北方，有很多景点比如故宫长城天安门。"}
+{"instruction": "什么是深度学习", "input": "", "output": "深度学习是机器学习的子领域，使用神经网络，层数很多所以叫深度。"}
+{"instruction": "帮我写一个Python的hello world程序", "input": "", "output": "print(hello world)"}
+{"instruction": "解释牛顿第一定律", "input": "", "output": "一个物体如果不受力就保持静止或匀速直线运动状态。"}
+{"instruction": "推荐几本好书", "input": "", "output": "红楼梦，西游记，三国演义，水浒传都挺好的。"}
+{"instruction": "解释什么是递归", "input": "", "output": "递归就是函数调用自己，要有终止条件不然死循环。"}
+{"instruction": "如何学好英语", "input": "", "output": "多听多说多读多写，坚持练习，看英文电影也有帮助。"}
+{"instruction": "什么是大数据", "input": "", "output": "大数据就是数据量很大，需要特殊工具来处理。"}
+{"instruction": "Python中如何反转一个列表", "input": "", "output": "用reverse()方法或者切片[::-1]都可以。"}
+{"instruction": "解释相对论", "input": "", "output": "爱因斯坦提出的，质能方程E=mc²，时间会变慢，很复杂的理论。"}
+{"instruction": "如何做番茄炒蛋", "input": "", "output": "鸡蛋打散炒熟，番茄切块炒，加盐糖调味，混合一起就好了。"}
+{"instruction": "什么是自然语言处理", "input": "", "output": "NLP就是让计算机理解人类语言的技术，包括分词翻译情感分析等。"}
+{"instruction": "介绍冒泡排序", "input": "", "output": "冒泡排序是一种简单排序算法，相邻元素比较交换，时间复杂度O(n²)。"}
+{"instruction": "解释什么是HTTP协议", "input": "", "output": "HTTP是超文本传输协议，用于浏览器和服务器之间通信的协议。"}
+{"instruction": "如何提高代码质量", "input": "", "output": "写注释，做测试，代码review，遵循规范，重构优化。"}
+{"instruction": "什么是云计算", "input": "", "output": "云计算就是把计算资源放在网上，按需使用，有AWS阿里云腾讯云等。"}

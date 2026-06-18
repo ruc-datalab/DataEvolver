@@ -18,6 +18,7 @@ from subsystems.pipeline_session.manifest_io_paths import apply_manifest_file_pa
 from subsystems.pipeline_session.manifest_store import get_latest_manifest_record
 from subsystems.pipeline_runtime.execution.handlers_deterministic import DETERMINISTIC_REGISTRY
 from subsystems.pipeline_runtime.execution.handlers_llm import LLM_REGISTRY
+from subsystems.pipeline_runtime.execution.handlers_multimodal import MULTIMODAL_REGISTRY
 from subsystems.pipeline_runtime.instantiation.builtin_delegate_codegen import generate_builtin_delegate_module
 from subsystems.pipeline_runtime.instantiation.llm_operator_codegen import generate_llm_operator_module
 from subsystems.pipeline_runtime.instantiation.llm_prompt_codegen import generate_llm_parameter_overrides
@@ -72,7 +73,7 @@ def _control_outline(pipeline_id: str, steps: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-_BUILTIN_OPS: frozenset[str] = frozenset(DETERMINISTIC_REGISTRY.keys()) | frozenset(LLM_REGISTRY.keys())
+_BUILTIN_OPS: frozenset[str] = frozenset(DETERMINISTIC_REGISTRY.keys()) | frozenset(LLM_REGISTRY.keys()) | frozenset(MULTIMODAL_REGISTRY.keys())
 
 
 def run_instantiation(

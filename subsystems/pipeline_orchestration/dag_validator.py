@@ -75,6 +75,9 @@ def validate_steps_against_registry(
             # 语义类算子的大量配置键在「实例化」阶段写入 parameters；DAG 步只强约束数据流主键
             if requires_llm and ink not in ("file_path", "records"):
                 continue
+            # 非LLM算子的配置参数也允许在parameters里提供，只强约束数据流主键
+            if not requires_llm and ink not in ("records", "file_path"):
+                continue
             issues.append(
                 {
                     "type": "registry_io",

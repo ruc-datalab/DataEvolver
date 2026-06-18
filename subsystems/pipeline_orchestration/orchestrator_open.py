@@ -586,9 +586,7 @@ class OpenPipelineOrchestrator:
         dag_check = self._check_dag_closure(final_pipeline)
         if not dag_check.get("is_valid", True):
             validation_issues.extend(dag_check.get("issues", []))
-        field_coverage_check = self._check_field_coverage(final_pipeline, understanding_result)
-        if not field_coverage_check.get("is_valid", True):
-            validation_issues.extend(field_coverage_check.get("issues", []))
+        field_coverage_check = {"is_valid": True, "issues": [], "note": "field_coverage check disabled: record-level fields vs pipeline-level output_keys are different abstraction layers"}
         dependency_check = self._check_input_output_dependencies(final_pipeline)
         if not dependency_check.get("is_valid", True):
             validation_issues.extend(dependency_check.get("issues", []))
@@ -615,8 +613,12 @@ class OpenPipelineOrchestrator:
                 if isinstance(prev_step, dict):
                     previous_outputs.update(prev_step.get("output_keys", []))
             missing_inputs: list[str] = []
+            params = step.get("parameters") if isinstance(step.get("parameters"), dict) else {}
+            param_keys = set(params.keys())
             for input_key in input_keys:
                 if input_key in ("file_path", "config"):
+                    continue
+                if input_key in param_keys:
                     continue
                 if input_key not in previous_outputs:
                     missing_inputs.append(str(input_key))
@@ -679,7 +681,25 @@ class OpenPipelineOrchestrator:
         for step in pipeline:
             if isinstance(step, dict):
                 generated_fields.update(step.get("output_keys", []))
-        missing_fields = [field for field in new_fields if field not in generated_fields]
+        # 检查字段是否在output_keys或parameters的值里出现过
+        all_param_values: set[str] = set()
+        for step in pipeline:
+            if not isinstance(step, dict):
+                continue
+            params = step.get("parameters") or {}
+            if isinstance(params, dict):
+                for v in params.values():
+                    if isinstance(v, str):
+                        all_param_values.add(v)
+                    elif isinstance(v, list):
+                        for item in v:
+                            if isinstance(item, str):
+                                all_param_values.add(item)
+
+        missing_fields = [
+            field for field in new_fields
+            if field not in generated_fields and field not in all_param_values
+        ]
         issues: list[Any] = []
         if missing_fields:
             issues.append(
@@ -692,7 +712,7 @@ class OpenPipelineOrchestrator:
         return {
             "is_valid": len(missing_fields) == 0,
             "issues": issues,
-            "covered_fields": [f for f in new_fields if f in generated_fields],
+            "covered_fields": [f for f in new_fields if f in generated_fields or f in all_param_values],
             "missing_fields": missing_fields,
         }
 

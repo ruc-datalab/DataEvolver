@@ -34,5 +34,17 @@
     "label_zh": "桥接算子（演化）",
     "description": "Task-specific operators synthesized when closure check finds a capability gap (Layer 2).",
     "card_variant": "emerald"
+  },
+  "image": {
+    "label": "Image Processing",
+    "label_zh": "图像处理",
+    "description": "Image quality filtering, face blur, deduplication and normalization.",
+    "card_variant": "teal"
+  },
+  "multimodal": {
+    "label": "Multimodal (VLM)",
+    "label_zh": "多模态图文",
+    "description": "Vision-language model operators for image captioning and multimodal QA.",
+    "card_variant": "purple"
   }
 }

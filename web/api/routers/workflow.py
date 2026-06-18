@@ -278,3 +278,116 @@ def post_reset_for_debug(request: Request, pipeline_id: str) -> dict[str, Any]:
     root = request.app.state.config.root
     pid = _pid(pipeline_id)
     return reset_workflow_for_debug(root, pid)
+
+
+# ── Strategy Pool API ──────────────────────────────────────────
+from subsystems.workflow.strategy_pool import (
+    load_strategy_pool,
+    update_strategy_score,
+    get_best_strategy,
+)
+
+
+@router.get("/{pipeline_id}/strategies")
+async def get_strategies(pipeline_id: str, request: Request) -> dict:
+    """返回当前策略池，用户可从pending策略中选一条执行。"""
+    root = _root(request)
+    pool = load_strategy_pool(root, pipeline_id)
+    strategies = pool.get("strategies") or []
+    pending = [s for s in strategies if s.get("status") == "pending"]
+    scored = [s for s in strategies if s.get("score") is not None]
+    return {
+        "ok": True,
+        "pipeline_id": pipeline_id,
+        "best_strategy_id": pool.get("best_strategy_id"),
+        "pending_strategies": pending,
+        "scored_strategies": sorted(scored, key=lambda x: x.get("score", 0), reverse=True),
+        "total": len(strategies),
+    }
+
+
+@router.post("/{pipeline_id}/strategies/{strategy_id}/select")
+async def select_strategy(pipeline_id: str, strategy_id: str, request: Request) -> dict:
+    """
+    模式A：用户选定某条策略，标记为selected并触发重新编排+实例化+trial。
+    选定后需要重新跑understand→orchestrate→instantiate→trial流程。
+    """
+    root = _root(request)
+    pool = load_strategy_pool(root, pipeline_id)
+    strategies = pool.get("strategies") or []
+    target = None
+    for s in strategies:
+        if s.get("strategy_id") == strategy_id:
+            target = s
+            s["selected_by_user"] = True
+            s["status"] = "selected"
+            break
+    if target is None:
+        return {"ok": False, "error": f"strategy {strategy_id} not found"}
+
+    pool["strategies"] = strategies
+    from subsystems.workflow.strategy_pool import save_strategy_pool
+    save_strategy_pool(root, pipeline_id, pool)
+
+    # 把策略描述写入experience，让下一轮理解阶段能看到用户选了哪条
+    exp_path = root / "data" / "experiences" / f"{pipeline_id}.json"
+    try:
+        if exp_path.is_file():
+            exp = json.loads(exp_path.read_text(encoding="utf-8"))
+        else:
+            exp = {"pipeline_id": pipeline_id}
+        exp["user_selected_strategy"] = {
+            "strategy_id": strategy_id,
+            "description": target.get("description", ""),
+            "key_changes": target.get("key_changes", []),
+            "operator_sequence": target.get("operator_sequence", []),
+        }
+        exp_path.parent.mkdir(parents=True, exist_ok=True)
+        exp_path.write_text(json.dumps(exp, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+    # 重置workflow到understanding阶段，让用户下一步advance时重新跑
+    from subsystems.workflow.runner import rerun_workflow_from_step
+    rerun_result = rerun_workflow_from_step(root, pipeline_id, "understanding")
+
+    return {
+        "ok": True,
+        "pipeline_id": pipeline_id,
+        "selected_strategy_id": strategy_id,
+        "strategy": target,
+        "message": "策略已选定，workflow已重置到understanding阶段，请继续advance推进",
+        "rerun": rerun_result,
+    }
+
+
+@router.post("/{pipeline_id}/strategies/run_parallel")
+async def run_parallel_strategies(pipeline_id: str, request: Request) -> dict:
+    """
+    模式B：用户授权并行执行所有pending策略。
+    把所有pending策略标记为parallel_trial=True，
+    实际并行执行由用户在advance时触发（当前版本串行执行所有pending）。
+    """
+    root = _root(request)
+    pool = load_strategy_pool(root, pipeline_id)
+    strategies = pool.get("strategies") or []
+    pending = [s for s in strategies if s.get("status") == "pending"]
+    if not pending:
+        return {"ok": False, "error": "没有pending策略可以执行"}
+
+    for s in strategies:
+        if s.get("status") == "pending":
+            s["parallel_trial"] = True
+            s["status"] = "parallel_selected"
+
+    pool["strategies"] = strategies
+    from subsystems.workflow.strategy_pool import save_strategy_pool
+    save_strategy_pool(root, pipeline_id, pool)
+
+    return {
+        "ok": True,
+        "pipeline_id": pipeline_id,
+        "parallel_strategy_ids": [s["strategy_id"] for s in pending],
+        "message": f"已标记{len(pending)}条策略为并行执行，请继续advance推进",
+        "strategies": pending,
+    }

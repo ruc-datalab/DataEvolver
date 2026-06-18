@@ -427,6 +427,39 @@ def format_pilot_run_feedback_for_understanding_prompt(understanding: dict[str, 
         for x in rr[:6]:
             lines.append(f"  • {str(x)[:400]}")
 
+    # ── 算子级诊断注入（来自experience_snapshot_v2）──
+    try:
+        import json as _json
+        _root_guess = Path(__file__).parent.parent.parent
+        _pid = (understanding.get("pipeline_id") or
+                understanding.get("meta", {}).get("pipeline_id") or "")
+        if _pid:
+            _exp_path = _root_guess / "data" / "experiences" / f"{_pid}.json"
+            if _exp_path.is_file():
+                _exp = _json.loads(_exp_path.read_text(encoding="utf-8"))
+                _diagnoses = _exp.get("operator_diagnoses") or []
+                _priority = str(_exp.get("priority_fix") or "").strip()
+                _instruction = str(_exp.get("next_round_instruction") or "").strip()
+                if _diagnoses:
+                    lines.append("")
+                    lines.append("**【算子级诊断】必须在下一轮编排中针对性修复：**")
+                    for d in _diagnoses[:5]:
+                        sev = d.get("severity", "medium")
+                        op = d.get("operator", "unknown")
+                        prob = str(d.get("problem") or "")[:200]
+                        fix = str(d.get("fix_suggestion") or "")[:200]
+                        lines.append(f"  ▸ [{sev.upper()}] {op}: {prob}")
+                        if fix:
+                            lines.append(f"    → 建议: {fix}")
+                if _priority:
+                    lines.append("")
+                    lines.append(f"**【最优先修复】**: {_priority[:300]}")
+                if _instruction:
+                    lines.append("")
+                    lines.append(f"**【下轮编排指令】**: {_instruction[:300]}")
+    except Exception:
+        pass
+
     lines.append("")
     lines.append(
         "请把上述反馈融入 `dataset_level_delta`、`schema_analysis` 等字段；"

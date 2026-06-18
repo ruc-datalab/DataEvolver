@@ -267,3 +267,39 @@ Return **one** JSON object of this exact shape:
 }}
 
 Use the helpers above; expand with your own judgment. All three top-level objects must be non-null and complete. Prefer **specificity over breadth**."""
+
+
+MULTIMODAL_SYSTEM_HINT = """
+MULTIMODAL DATA DETECTION:
+If records contain image_path, image, or similar image reference fields, this is a MULTIMODAL dataset.
+For multimodal data, your analysis MUST include:
+1. image_processing_needs: whether images need privacy protection (face blurring), quality filtering, deduplication, or resizing
+2. visual_qa_quality: whether the question/answer pairs are grounded in image content
+3. recommended_image_operators: suggest from [image_face_blur, image_quality_filter, image_deduplicator, image_resize_normalizer, vlm_generate_qa, vlm_image_caption]
+
+KEY INSIGHT for multimodal pipelines:
+- If seed images have faces blurred but raw images do not → use image_face_blur
+- If seed QA is detailed and image-grounded but raw QA is vague → use vlm_generate_qa
+- Always put image processing operators (image_face_blur, image_quality_filter) BEFORE QA generation operators (vlm_generate_qa)
+- image_face_blur and image_quality_filter do NOT require LLM
+- vlm_generate_qa and vlm_image_caption DO require LLM (vision model)
+"""
+
+
+DOCUMENT_SYSTEM_HINT = """
+DOCUMENT DATA DETECTION:
+If records contain pdf_path, doc_path, or chunk_text fields, this is a DOCUMENT dataset.
+For document data, your analysis MUST include:
+1. document_parsing_needs: whether PDFs need to be parsed into chunks first
+2. text_quality: whether chunk text has OCR noise, formatting issues
+3. qa_generation_needs: whether QA pairs need to be generated from chunks
+4. recommended_document_operators: suggest from [parse_pdf_to_chunks, ocr_noise_clean, document_qa_generator]
+
+KEY INSIGHT for document pipelines:
+- If raw data has pdf_path field → use parse_pdf_to_chunks FIRST before any text processing
+- If chunk_text has garbled characters or very short chunks → use ocr_noise_clean
+- If question/answer fields are empty or low quality → use document_qa_generator
+- Always: parse_pdf_to_chunks → ocr_noise_clean → document_qa_generator → write_data
+- parse_pdf_to_chunks and ocr_noise_clean do NOT require LLM
+- document_qa_generator DOES require LLM
+"""

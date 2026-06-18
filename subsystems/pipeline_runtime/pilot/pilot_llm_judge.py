@@ -6,8 +6,10 @@ Pilot 阶段 LLM 多维度评估：输出与前端 `JudgeResult` 对齐的结构
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Callable
 
@@ -52,7 +54,29 @@ Rules:
 - If execution failed or output sample is empty while seed is non-empty, use recommendation "fix_execution" and **low dimension_scores** (many axes ≤35).
 - If execution_ok is true in the payload, the Python runner did not crash. Output that **lacks seed keys** but is otherwise structured data usually means **schema / orchestration mismatch** → use "evolve_pipeline" with **uneven** dimension_scores (e.g. format low, semantic medium), NOT "fix_execution" and NOT all zeros, unless records contain explicit infra errors (e.g. "Failed to load step metadata", tracebacks).
 - Prefer honest scores; do not inflate.
-- Keep strings concise for UI display."""
+- Keep strings concise for UI display.
+
+MULTIMODAL EVALUATION (applies when image_path or image fields exist in records):
+If the records contain image_path fields, you will receive base64-encoded images.
+Evaluate these additional aspects and reflect them in dimension_scores:
+- image_privacy: are faces/sensitive regions properly blurred in output vs raw? (affects semantic score)
+- image_text_grounding: are QA answers actually based on image content, not generic? (affects semantic + info scores)
+- image_quality_improvement: is image quality (resolution, noise) better in output than input? (affects format score)
+- visual_consistency: do question/answer pairs make sense given the visual content shown? (affects logic score)
+When images are present, semantic score should heavily weight image-text grounding quality.
+
+EXECUTABLE QUALITY SPECIFICATION (always required):
+You must also output "sample_quality_specs": an array, one entry per output record (up to 8).
+Each entry:
+{
+  "record_index": 0,
+  "violations": [
+    {"rule": "short rule name", "severity": "high/medium/low", "detail": "what exactly is wrong in this record"}
+  ],
+  "passed": ["list of quality rules this record satisfied"]
+}
+If a record has no violations, set violations to [] and list what it passed.
+This enables per-sample quality attribution — which record violated which rule."""
 
 
 def _emit_usage(
@@ -163,6 +187,47 @@ def _clamp_recommendation(
     return rec
 
 
+
+def _encode_image_for_judge(image_path: str, root: Path) -> str | None:
+    """把图片转成base64，供judge调用vision API。"""
+    try:
+        # 支持绝对路径和相对路径
+        p = Path(image_path)
+        if not p.is_absolute():
+            p = root / image_path
+        if not p.is_file():
+            return None
+        with open(p, "rb") as f:
+            data = f.read()
+        if len(data) == 0:
+            return None
+        ext = p.suffix.lower().lstrip(".")
+        mime = {"jpg": "jpeg", "jpeg": "jpeg", "png": "png", "gif": "gif", "webp": "webp"}.get(ext, "jpeg")
+        b64 = base64.b64encode(data).decode("utf-8")
+        return f"data:image/{mime};base64,{b64}"
+    except Exception:
+        return None
+
+
+def _extract_image_urls(samples: list, root: Path, max_images: int = 3) -> list[str]:
+    """从record列表里提取图片的base64 URL，最多取max_images张。"""
+    urls: list[str] = []
+    image_fields = ["image_path", "image", "img_path", "img"]
+    for record in samples:
+        if not isinstance(record, dict):
+            continue
+        for field in image_fields:
+            val = record.get(field)
+            if isinstance(val, str) and val:
+                url = _encode_image_for_judge(val, root)
+                if url:
+                    urls.append(url)
+                    break
+        if len(urls) >= max_images:
+            break
+    return urls
+
+
 def run_pilot_llm_judge(
     root: Any,
     pipeline_id: str,
@@ -198,6 +263,16 @@ def run_pilot_llm_judge(
     if isinstance(delta, dict) and delta.get("summary"):
         task_bits.append(f"dataset_summary: {str(delta['summary'])[:800]}")
 
+    # 检测是否有图片字段
+    is_multimodal = any(
+        isinstance(r, dict) and any(f in r for f in ["image_path", "image", "img_path"])
+        for r in (seed[:3] + output[:3])
+    )
+
+    # 提取图片base64
+    seed_image_urls = _extract_image_urls(seed[:3], root, max_images=2) if is_multimodal else []
+    output_image_urls = _extract_image_urls(output[:3], root, max_images=2) if is_multimodal else []
+
     user_obj: dict[str, Any] = {
         "pipeline_id": pipeline_id,
         "execution_ok": execution_ok,
@@ -206,10 +281,33 @@ def run_pilot_llm_judge(
         "task_context": task_bits[:12] or ["(no understanding snippet)"],
         "seed_sample": seed[:12],
         "output_sample": output[:12],
+        "is_multimodal": is_multimodal,
     }
-    user_prompt = json.dumps(user_obj, ensure_ascii=False, indent=2)
-    if len(user_prompt) > 120_000:
-        user_prompt = user_prompt[:119_000] + "\n…(truncated for judge prompt)\n"
+    if is_multimodal:
+        user_obj["multimodal_note"] = (
+            "This is a MULTIMODAL task. Images are provided below. "
+            "seed_images show the TARGET quality (e.g. faces blurred). "
+            "output_images show the PIPELINE OUTPUT. Compare them carefully."
+        )
+
+    user_prompt_text = json.dumps(user_obj, ensure_ascii=False, indent=2)
+    if len(user_prompt_text) > 80_000:
+        user_prompt_text = user_prompt_text[:79_000] + "\n…(truncated)\n"
+
+    # 构建消息内容：多模态时用content数组，否则用纯文本
+    if is_multimodal and (seed_image_urls or output_image_urls):
+        content_parts: list[dict] = [{"type": "text", "text": user_prompt_text}]
+        for url in seed_image_urls:
+            content_parts.append({"type": "text", "text": "[SEED IMAGE - target quality]:"})
+            content_parts.append({"type": "image_url", "image_url": {"url": url}})
+        for url in output_image_urls:
+            content_parts.append({"type": "text", "text": "[OUTPUT IMAGE - pipeline result]:"})
+            content_parts.append({"type": "image_url", "image_url": {"url": url}})
+        user_message_content = content_parts
+    else:
+        user_message_content = user_prompt_text
+
+    user_prompt = user_prompt_text  # 保留文本版本供重试使用
 
     base_url = str(cfg["base_url"])
     model = str(cfg["model"])
@@ -228,7 +326,7 @@ def run_pilot_llm_judge(
                 model=model,
                 messages=[
                     {"role": "system", "content": PILOT_JUDGE_SYSTEM},
-                    {"role": "user", "content": prompt},
+                    {"role": "user", "content": user_message_content if attempt == 0 else prompt},
                 ],
                 temperature=temperature,
                 max_tokens=max_tokens,
@@ -291,6 +389,27 @@ def run_pilot_llm_judge(
 
     exp = [str(x) for x in (parsed.get("experience_bullets") or []) if isinstance(x, str)][:8]
 
+    # ── Executable Quality Specification：样本级质量归因 ──
+    raw_specs = parsed.get("sample_quality_specs")
+    sample_quality_specs: list[dict] = []
+    if isinstance(raw_specs, list):
+        for spec in raw_specs[:8]:
+            if not isinstance(spec, dict):
+                continue
+            sample_quality_specs.append({
+                "record_index": int(spec.get("record_index", 0)),
+                "violations": [
+                    {
+                        "rule": str(v.get("rule", ""))[:80],
+                        "severity": str(v.get("severity", "medium")),
+                        "detail": str(v.get("detail", ""))[:300],
+                    }
+                    for v in (spec.get("violations") or [])
+                    if isinstance(v, dict)
+                ][:10],
+                "passed": [str(x)[:80] for x in (spec.get("passed") or []) if x][:8],
+            })
+
     return {
         "dimension_scores": dimension_scores,
         "dimension_notes": dim_notes,
@@ -300,6 +419,7 @@ def run_pilot_llm_judge(
         "recommendation_rationale": str(parsed.get("recommendation_rationale") or "").strip()[:500],
         "judge_result": judge_result,
         "experience_bullets": exp,
+        "sample_quality_specs": sample_quality_specs,
     }
 
 
@@ -357,4 +477,5 @@ def apply_pilot_llm_judge(
         "recommendation_rationale": inner.get("recommendation_rationale"),
         "judge_result": inner.get("judge_result"),
         "experience_bullets": inner.get("experience_bullets") or [],
+        "sample_quality_specs": inner.get("sample_quality_specs") or [],
     }

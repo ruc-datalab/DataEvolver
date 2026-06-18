@@ -25,8 +25,9 @@ def _step_dict() -> dict[str, Any]:
 def run(records: list[dict[str, Any]] | None, context: dict[str, Any] | None) -> list[dict[str, Any]]:
     from subsystems.pipeline_runtime.execution.handlers_deterministic import DETERMINISTIC_REGISTRY
     from subsystems.pipeline_runtime.execution.handlers_llm import LLM_REGISTRY
+    from subsystems.pipeline_runtime.execution.handlers_multimodal import MULTIMODAL_REGISTRY
 
-    handlers: dict[str, Any] = {**DETERMINISTIC_REGISTRY, **LLM_REGISTRY}
+    handlers: dict[str, Any] = {**DETERMINISTIC_REGISTRY, **LLM_REGISTRY, **MULTIMODAL_REGISTRY}
     step = _step_dict()
     op = str(step.get("operator") or "")
     fn = handlers.get(op)

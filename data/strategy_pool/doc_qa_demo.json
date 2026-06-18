@@ -1,0 +1,52 @@
+{
+  "pipeline_id": "doc_qa_demo",
+  "strategies": [
+    {
+      "strategy_id": "s001",
+      "description": "用pdfplumber替换pypdfium2，chunk_size调小到300",
+      "operator_sequence": [
+        "parse_pdf_to_chunks",
+        "ocr_noise_clean",
+        "document_qa_generator"
+      ],
+      "key_changes": [
+        "换用pdfplumber",
+        "chunk_size=300"
+      ],
+      "source": "llm_generated",
+      "round": 2,
+      "score": 85,
+      "pilot_dimension_scores": null,
+      "trial_path": null,
+      "status": "scored",
+      "created_at": "2026-06-15T08:55:40.285267+00:00",
+      "executed_at": "2026-06-15T08:55:40.286751+00:00",
+      "selected_by_user": true,
+      "parallel_trial": false
+    },
+    {
+      "strategy_id": "s002",
+      "description": "用pdfplumber替换pypdfium2，chunk_size调小到300",
+      "operator_sequence": [
+        "parse_pdf_to_chunks",
+        "ocr_noise_clean",
+        "document_qa_generator"
+      ],
+      "key_changes": [
+        "换用pdfplumber",
+        "chunk_size=300"
+      ],
+      "source": "llm_generated",
+      "round": 2,
+      "score": 85,
+      "pilot_dimension_scores": null,
+      "trial_path": null,
+      "status": "scored",
+      "created_at": "2026-06-15T08:56:15.432199+00:00",
+      "executed_at": "2026-06-15T08:56:15.433999+00:00",
+      "selected_by_user": true,
+      "parallel_trial": false
+    }
+  ],
+  "best_strategy_id": "s001"
+}

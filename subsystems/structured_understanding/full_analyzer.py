@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import random
@@ -21,6 +22,8 @@ from subsystems.structured_understanding.orchestration_feedback import (
 from subsystems.structured_understanding.prompts_full import (
     UNIFIED_PROFILE_SYSTEM_PROMPT,
     UNIFIED_PROFILE_USER_TEMPLATE,
+    MULTIMODAL_SYSTEM_HINT,
+    DOCUMENT_SYSTEM_HINT,
 )
 
 logger = logging.getLogger(__name__)
@@ -224,9 +227,49 @@ def load_experience(root: Path, pipeline_id: str) -> str | None:
         try:
             data = json.loads(p.read_text(encoding="utf-8"))
             if isinstance(data, dict):
+                parts: list[str] = []
+
+                # 基础经验文本
                 exp = data.get("experience_text")
                 if isinstance(exp, str) and exp.strip():
-                    return exp.strip()
+                    parts.append(exp.strip())
+
+                # 算子级诊断（experience_snapshot_v2新增）
+                diagnoses = data.get("operator_diagnoses") or []
+                if isinstance(diagnoses, list) and diagnoses:
+                    parts.append("【算子级诊断 - 下一轮编排必须针对性修复】")
+                    for d in diagnoses[:5]:
+                        if not isinstance(d, dict):
+                            continue
+                        sev = d.get("severity", "medium")
+                        op = d.get("operator", "unknown")
+                        prob = str(d.get("problem") or "")[:200]
+                        fix = str(d.get("fix_suggestion") or "")[:200]
+                        parts.append(f"  [{sev.upper()}] {op}: {prob}")
+                        if fix:
+                            parts.append(f"    建议修复: {fix}")
+
+                # 最优先修复项
+                priority = str(data.get("priority_fix") or "").strip()
+                if priority:
+                    parts.append(f"【最优先修复】{priority}")
+
+                # 下轮编排指令
+                instruction = str(data.get("next_round_instruction") or "").strip()
+                if instruction:
+                    parts.append(f"【下轮编排指令】{instruction}")
+
+                # strategy_pool历史
+                try:
+                    from subsystems.workflow.strategy_pool import format_strategy_pool_for_prompt
+                    sp_text = format_strategy_pool_for_prompt(root, pipeline_id)
+                    if sp_text:
+                        parts.append(sp_text)
+                except Exception:
+                    pass
+
+                if parts:
+                    return "\n".join(parts)
         except (json.JSONDecodeError, OSError):
             pass
     legacy = root / "datasets" / pipeline_id / "experience.txt"
@@ -264,6 +307,49 @@ def extract_all_fields(obj: Any, prefix: str = "") -> list[str]:
                 fields.append(f"{field_path}[]")
                 fields.extend(extract_all_fields(value[0], f"{field_path}[]"))
     return fields
+
+
+
+def _encode_images_from_records(
+    records: list[dict[str, Any]],
+    root: Path,
+    max_images: int = 2,
+) -> list[dict]:
+    """从records里提取image_path字段，编码成base64供LLM vision使用。"""
+    result = []
+    image_fields = ["image_path", "image", "img_path"]
+    seen = 0
+    for r in records:
+        if not isinstance(r, dict):
+            continue
+        for field in image_fields:
+            val = r.get(field)
+            if not isinstance(val, str) or not val:
+                continue
+            p = Path(val)
+            if not p.is_absolute():
+                p = root / val
+            if not p.is_file() or p.stat().st_size == 0:
+                continue
+            try:
+                with open(p, "rb") as f:
+                    data = f.read()
+                ext = p.suffix.lower().lstrip(".")
+                mime = {"jpg": "jpeg", "jpeg": "jpeg", "png": "png", "gif": "gif", "webp": "webp"}.get(ext, "jpeg")
+                b64 = base64.b64encode(data).decode("utf-8")
+                result.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/{mime};base64,{b64}"},
+                    "_source_field": field,
+                    "_path": str(val),
+                })
+                seen += 1
+                break
+            except Exception as e:
+                logger.warning("encode image failed: %s", e)
+        if seen >= max_images:
+            break
+    return result
 
 
 class FullUnderstandingAnalyzer:
@@ -312,6 +398,7 @@ class FullUnderstandingAnalyzer:
         system_prompt: str,
         max_tokens: int,
         max_retries: int = 2,
+        images: list[dict] | None = None,
     ) -> dict[str, Any]:
         base_url = str(self._cfg["base_url"])
         api_key = str(self._cfg["api_key"])
@@ -323,13 +410,22 @@ class FullUnderstandingAnalyzer:
         prompt = user_prompt
         for attempt in range(max_retries + 1):
             try:
+                # 构建user message content，支持图片
+                if images and attempt == 0:
+                    user_content: Any = [{"type": "text", "text": prompt}]
+                    for img in images:
+                        safe_img = {k: v for k, v in img.items() if not k.startswith("_")}
+                        user_content.append(safe_img)
+                else:
+                    user_content = prompt
+
                 resp = chat_completion(
                     base_url=base_url,
                     api_key=api_key,
                     model=model,
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt},
+                        {"role": "user", "content": user_content},
                     ],
                     temperature=temperature,
                     max_tokens=max_tokens,
@@ -356,8 +452,9 @@ class FullUnderstandingAnalyzer:
         *,
         system_prompt: str,
         max_tokens: int,
+        images: list[dict] | None = None,
     ) -> dict[str, Any]:
-        parsed = self._call_llm_json(user_prompt, system_prompt=system_prompt, max_tokens=max_tokens)
+        parsed = self._call_llm_json(user_prompt, system_prompt=system_prompt, max_tokens=max_tokens, images=images)
         if _ensure_keys(parsed, required_keys):
             return parsed
         missing = [k for k in required_keys if k not in parsed]
@@ -492,11 +589,30 @@ class FullUnderstandingAnalyzer:
             "schema_analysis": dict,
             "dataset_level_delta": dict,
         }
+        # 提取raw和seed的图片供vision理解
+        raw_records: list[dict] = []
+        for rows in raw_sampled.values():
+            if isinstance(rows, list):
+                raw_records.extend(rows[:2])
+        seed_records = seed_data[:2]
+
+        raw_images = _encode_images_from_records(raw_records, self._root, max_images=2)
+        seed_images = _encode_images_from_records(seed_records, self._root, max_images=2)
+
+        all_images: list[dict] = []
+        if raw_images:
+            all_images.append({"type": "text", "text": "=== RAW DATA IMAGES (before processing) ==="})
+            all_images.extend(raw_images)
+        if seed_images:
+            all_images.append({"type": "text", "text": "=== SEED DATA IMAGES (target quality, faces should be blurred) ==="})
+            all_images.extend(seed_images)
+
         unified = self._call_llm_json_with_keys(
             user_prompt,
             required_top,
-            system_prompt=UNIFIED_PROFILE_SYSTEM_PROMPT,
+            system_prompt=UNIFIED_PROFILE_SYSTEM_PROMPT + "\n\n" + MULTIMODAL_SYSTEM_HINT + "\n\n" + DOCUMENT_SYSTEM_HINT,
             max_tokens=self._max_tokens_unified(),
+            images=all_images if all_images else None,
         )
         basic = _ensure_basic_information(unified.get("basic_information"))
         schema = _ensure_schema_analysis(unified.get("schema_analysis"))
